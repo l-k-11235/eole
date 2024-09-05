@@ -497,9 +497,16 @@ class ONMTTokenizerTransform(TokenizerTransform):
     def tokenize_string(self, sentence, side="src", is_train=False):
         tokenizer = self.load_models[side]
         if self.gpt2_pretok:
-            sentence = "".join(
-                self.maptable[b]
-                for b in sentence.replace(DefaultTokens.SEP, "\n").encode("utf-8")
+            sentence = (
+                "".join(
+                    self.maptable[b]
+                    for b in sentence.replace(DefaultTokens.SEP, "\n").encode(
+                        "utf-8"
+                    )
+                )
+                .replace("<|begin_of_text|>", "") # eole adds a BOS token itself.
+                .replace("<|", "｟") # ensure llama3 special tokens preservation.
+                .replace("|>", "｠")
             )
             segmented1 = tokenizer(sentence)
             segmented = []
@@ -523,6 +530,7 @@ class ONMTTokenizerTransform(TokenizerTransform):
         tokenizer = self.load_models[side]
         if self.gpt2_pretok:
             sentence = "".join(tokens)
+            sentence = sentence.replace("｟", "<|").replace("｠", "|>")
             detokenized = bytearray([self.revtable[c] for c in sentence]).decode(
                 "utf-8", errors="replace"
             )
