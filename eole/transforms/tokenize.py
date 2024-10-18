@@ -511,10 +511,10 @@ class ONMTTokenizerTransform(TokenizerTransform):
     def tokenize_string(self, sentence, side="src", is_train=False):
         tokenizer = self.load_models[side]
 
+        sentence = sentence.replace("<|begin_of_text|>", "") # eole adds a BOS token itself.
         if self.mapped_tokens is not None:
             for mapped_toks in self.mapped_tokens:
-                sentence = sentence.replace(mapped_toks[0], mapped_toks[1])
-
+                sentence = sentence.replace(mapped_toks[0], mapped_toks[1]) 
         if self.gpt2_pretok:
             sentence = "".join(
                 self.maptable[b]
