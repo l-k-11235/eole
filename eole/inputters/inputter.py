@@ -87,6 +87,10 @@ def build_vocab(config, specials):
         vocabs["tgt"] = tgt_vocab
 
     vocabs["decoder_start_token"] = config.decoder_start_token
+    import pickle
+
+    with open("eole_vocabs.pkl", "wb") as file:
+        pickle.dump(vocabs, file)
     return vocabs
 
 
