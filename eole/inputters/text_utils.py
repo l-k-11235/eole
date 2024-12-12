@@ -40,6 +40,8 @@ def transform_bucket(task, bucket, threshold=0):
             example = clean_example(example)
             if len(example["src"]["src"]) > 0 and example["sco"] > threshold:
                 transformed_bucket.append(example)
+            if len(transformed_bucket) % 500 == 0:
+                logger.info(f"{len(transformed_bucket)} transformed examples")
 
         # at this point an example looks like:
         # {'src': {'src': ..., 'feats': [....]},
