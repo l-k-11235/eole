@@ -70,7 +70,7 @@ class WeightedMixer(MixingStrategy):
     def _reset_iter(self, ds_name):
         self._iterators[ds_name] = iter(self.iterables[ds_name])
         self._counts[ds_name] = self._counts.get(ds_name, 0) + 1
-        self._logging()
+        # self._logging()
 
     def _iter_datasets(self):
         for ds_name, ds_weight in self.weights.items():
@@ -213,15 +213,18 @@ class DynamicDatasetIter(torch.utils.data.IterableDataset):
             bucket_size_increment = running_config.bucket_size_increment
             skip_empty_level = config.skip_empty_level
         else:
+            # logger.info("Batching options in inference dynamic iterator")
+            # logger.info(running_config.batch_type)
+            # logger.info(batch_size)
             batch_size_multiple = 1
             corpora_info[CorpusTask.INFER] = Dataset()
             corpora_info[CorpusTask.INFER].transforms = config.transforms
             corpora_info[CorpusTask.INFER].weight = 1
-            # bucket_size = batch_size
-            bucket_size = 16384
+            bucket_size = 2000
             bucket_size_init = -1
             bucket_size_increment = 0
             skip_empty_level = "warning"
+
         return cls(
             corpora,
             corpora_info,
@@ -302,7 +305,6 @@ class DynamicDatasetIter(torch.utils.data.IterableDataset):
             _bucket_size = self.bucket_size_init
         else:
             _bucket_size = self.bucket_size
-
         for ex in self.mixer:
             bucket.append(ex)
             if len(bucket) == _bucket_size:
@@ -369,7 +371,9 @@ class DynamicDatasetIter(torch.utils.data.IterableDataset):
             yield minibatch
 
     def __iter__(self):
+        # logger.info(f'# bucketing with size {self.bucket_size}...')
         for bucket, bucket_idx in self._bucketing():
+            # logger.info(f'bucket {bucket_idx} of length {len(bucket)}')
             bucket = self._add_indice(bucket)
             bucket = sorted(bucket, key=lambda x: self.sort_key(x[0]))
             p_batch = list(
@@ -487,7 +491,7 @@ def build_dynamic_dataset_iter(
             multiprocessing_context="spawn",
             num_workers=data_iter.num_workers,
             worker_init_fn=data_iter._init_datasets,
-            prefetch_factor=config.training.prefetch_factor,
+            prefetch_factor=1000,  # config.training.prefetch_factor,
         )
         # Move tensor_batch from cpu to device
-        return OnDeviceDatasetIter(data_loader, device)
+        return OnDeviceDatasetIter(data_loader, device
