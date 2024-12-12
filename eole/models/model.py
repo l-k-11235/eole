@@ -453,7 +453,7 @@ class BaseModel(nn.Module):
         # else:
         #     model_opt = opt
         # model_opt = config
-        logger.info("Building model...")
+        # logger.info("Building model...")
         # moving up in build_model chain, step by step
         if not training:
             (
@@ -499,7 +499,7 @@ class BaseModel(nn.Module):
             logger.info(model)
         else:
             # actually load state dict here
-            logger.info("Loading data into the model")
+            # logger.info("Loading data into the model")
             model.load_checkpoint(
                 running_config,
                 vocabs,
@@ -714,24 +714,24 @@ class BaseModel(nn.Module):
                             name, module, param_name, param, buf_list, ckpt_t, offset
                         )
                         keyfound[name + "." + param_name] = True
-                    elif strict and (
-                        "lora" not in param_name and "slopes" not in param_name
-                    ):
-                        # Let's warn instead of just passing
-                        logger.info(
-                            "Missing key in safetensors checkpoint: %s" % name
-                            + "."
-                            + param_name
-                        )
-                        if (
-                            f"{name}.{param_name}"
-                            in ["generator.weight", "generator.bias"]
-                            and self.share_decoder_embeddings
-                        ):
-                            logger.info(
-                                "└─> Sharing from embeddings matrix since "
-                                "`share_decoder_embeddings` flag is enabled."
-                            )
+                    # elif strict and (
+                    #     "lora" not in param_name and "slopes" not in param_name
+                    # ):
+                    # # Let's warn instead of just passing
+                    # logger.info(
+                    #     "Missing key in safetensors checkpoint: %s" % name
+                    #     + "."
+                    #     + param_name
+                    # )
+                    # if (
+                    #     f"{name}.{param_name}"
+                    #     in ["generator.weight", "generator.bias"]
+                    #     and self.share_decoder_embeddings
+                    # ):
+                    # logger.info(
+                    #     "└─> Sharing from embeddings matrix since "
+                    #     "`share_decoder_embeddings` flag is enabled."
+                    # )
                     if getattr(running_config, "compute_dtype", None) == torch.int8:
                         torch.quantization.quantize_dynamic(module, inplace=True)
                     else:
