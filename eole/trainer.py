@@ -522,6 +522,12 @@ class Trainer(object):
                         )
                         bptt = True
 
+                        # print("# batch_tgt", batch['tgt'].tolist())
+                        # print()
+                        # print("# batch_src", batch['src'].tolist())
+                        # import sys
+                        # sys.exit()
+
                         # 3. Compute loss.
                         if self.zero_out_prompt_loss:
                             # The loss of the prompt will be set to zero.
