@@ -494,4 +494,4 @@ def build_dynamic_dataset_iter(
             prefetch_factor=1000,  # config.training.prefetch_factor,
         )
         # Move tensor_batch from cpu to device
-        return OnDeviceDatasetIter(data_loader, device
+        return OnDeviceDatasetIter(data_loader, device)
