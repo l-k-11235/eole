@@ -335,15 +335,17 @@ class TrainingConfig(
                 "parameter counts of -gpu_ranks must be less or equal "
                 "than -world_size."
             )
-        if (
-            self.world_size == len(self.gpu_ranks)
-            and self.world_size > 0
-            and min(self.gpu_ranks) > 0
-        ):
-            raise AssertionError(
-                "-gpu_ranks should have master(=0) rank "
-                "unless -world_size is greater than len(gpu_ranks)."
-            )
+        # if (
+        #     self.world_size == len(self.gpu_ranks)
+        #     and self.world_size > 0
+        #     and min(self.gpu_ranks) > 0
+        # ):
+        #     raise AssertionError(
+        #         "-gpu_ranks should have master(=0) rank "
+        #         "unless -world_size is greater than len(gpu_ranks)."
+        #     )
+        # I comment to make the inference for on-the-fly synthetic data generation
+        # runs on a device other than the one where the training is running.
 
         assert len(self.dropout) == len(
             self.dropout_steps
@@ -364,14 +366,14 @@ class TrainingConfig(
                 "all",
             ], '-update_vocab needs -reset_optim "states" or "all"'
 
-        if (
-            "param_init" in self.model_fields_set
-            and self.param_init != 0.0
-            and self.param_init_method == "xavier_uniform"
-        ):
-            logger.warn(
-                f"xavier_uniform initialization does not require param_init ({self.param_init})"
-            )
+        # if (
+        #     "param_init" in self.model_fields_set
+        #     and self.param_init != 0.0
+        #     and self.param_init_method == "xavier_uniform"
+        # ):
+        #     logger.warn(
+        #         f"xavier_uniform initialization does not require param_init ({self.param_init})"
+        #     )
 
         if self.optim == "fusedadam":
             assert (

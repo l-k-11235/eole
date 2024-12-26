@@ -36,10 +36,10 @@ class InferenceEngine(object):
                 device_id=self.device_id,
                 model_type=self.model_type,  # patch for CT2
             )
-            scores, estims, preds = self._predict(infer_iter)
+            scores, estims, preds, bucket = self._predict(infer_iter)
         else:
             scores, estims, preds = self.infer_file_parallel()
-        return scores, estims, preds
+        return scores, estims, preds, bucket
 
     def infer_list(self, src, settings={}):
         """List of strings inference `src`"""
@@ -53,10 +53,10 @@ class InferenceEngine(object):
                 device_id=self.device_id,
                 model_type=self.model_type,
             )
-            scores, estims, preds = self._predict(infer_iter, settings=settings)
+            scores, estims, preds, bucket = self._predict(infer_iter, settings=settings)
         else:
             scores, estims, preds = self.infer_list_parallel(src, settings=settings)
-        return scores, estims, preds
+        return scores, estims, preds, bucket
 
     def infer_file_parallel(self):
         """File inference in mulitprocessing with partitioned models."""
@@ -168,13 +168,13 @@ class InferenceEnginePY(InferenceEngine):
 
     def _predict(self, infer_iter, settings={}):
         self.predictor.update_settings(**settings)
-        scores, estims, preds = self.predictor._predict(
+        scores, estims, preds, bucket = self.predictor._predict(
             infer_iter,
             infer_iter.transforms,
             self.config.attn_debug,
             self.config.align_debug,
         )
-        return scores, estims, preds
+        return scores, estims, preds, bucket
 
     def _score(self, infer_iter):
         self.predictor.with_scores = True

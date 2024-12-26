@@ -70,7 +70,7 @@ class WeightedMixer(MixingStrategy):
     def _reset_iter(self, ds_name):
         self._iterators[ds_name] = iter(self.iterables[ds_name])
         self._counts[ds_name] = self._counts.get(ds_name, 0) + 1
-        self._logging()
+        # self._logging()
 
     def _iter_datasets(self):
         for ds_name, ds_weight in self.weights.items():
@@ -138,6 +138,7 @@ class DynamicDatasetIter(torch.utils.data.IterableDataset):
         score_threshold=0,
         left_pad=False,
         model_type=None,
+        yield_bucket=False,
     ):
         super(DynamicDatasetIter).__init__()
         self.corpora = corpora
@@ -170,6 +171,7 @@ class DynamicDatasetIter(torch.utils.data.IterableDataset):
         else:
             self.left_pad = False
         self.model_type = model_type
+        self.yield_bucket = yield_bucket
 
     @classmethod
     def from_config(
@@ -183,6 +185,7 @@ class DynamicDatasetIter(torch.utils.data.IterableDataset):
         stride=1,
         offset=0,
         model_type=None,
+        yield_bucket=False,
     ):
         """Initilize `DynamicDatasetIter` with options parsed from `opt`."""
         from eole.config.run import PredictConfig
@@ -213,15 +216,18 @@ class DynamicDatasetIter(torch.utils.data.IterableDataset):
             bucket_size_increment = running_config.bucket_size_increment
             skip_empty_level = config.skip_empty_level
         else:
+            # logger.info("Batching options in inference dynamic iterator")
+            # logger.info(running_config.batch_type)
+            # logger.info(batch_size)
             batch_size_multiple = 1
             corpora_info[CorpusTask.INFER] = Dataset()
             corpora_info[CorpusTask.INFER].transforms = config.transforms
             corpora_info[CorpusTask.INFER].weight = 1
-            # bucket_size = batch_size
-            bucket_size = 16384
+            bucket_size = 2000
             bucket_size_init = -1
             bucket_size_increment = 0
             skip_empty_level = "warning"
+
         return cls(
             corpora,
             corpora_info,
@@ -246,6 +252,7 @@ class DynamicDatasetIter(torch.utils.data.IterableDataset):
             model_type=model_type
             if model_type is not None
             else getattr(config.model, "model_type", None),
+            yield_bucket=yield_bucket,
         )
 
     def _init_datasets(self, worker_id):
@@ -302,7 +309,6 @@ class DynamicDatasetIter(torch.utils.data.IterableDataset):
             _bucket_size = self.bucket_size_init
         else:
             _bucket_size = self.bucket_size
-
         for ex in self.mixer:
             bucket.append(ex)
             if len(bucket) == _bucket_size:
@@ -369,6 +375,7 @@ class DynamicDatasetIter(torch.utils.data.IterableDataset):
             yield minibatch
 
     def __iter__(self):
+        # logger.info(f'# bucketing with size {self.bucket_size}...')
         for bucket, bucket_idx in self._bucketing():
             bucket = self._add_indice(bucket)
             bucket = sorted(bucket, key=lambda x: self.sort_key(x[0]))
@@ -392,7 +399,10 @@ class DynamicDatasetIter(torch.utils.data.IterableDataset):
                 tensor_batch = tensorify(
                     self.vocabs, minibatch, self.device, self.left_pad
                 )
-                yield (tensor_batch, bucket_idx)
+                if self.yield_bucket:
+                    yield (tensor_batch, bucket_idx, bucket)
+                else:
+                    yield (tensor_batch, bucket_idx, None)
 
 
 class OnDeviceDatasetIter:
@@ -401,7 +411,7 @@ class OnDeviceDatasetIter:
         self.device = device
 
     def __iter__(self):
-        for (tensor_batch, bucket_idx) in self.data_iter:
+        for (tensor_batch, bucket_idx, bucket) in self.data_iter:
             for key in tensor_batch.keys():
                 if key not in [
                     "src_ex_vocab",
@@ -410,7 +420,7 @@ class OnDeviceDatasetIter:
                     "cid_line_number",
                 ]:
                     tensor_batch[key] = tensor_batch[key].to(self.device)
-            yield (tensor_batch, bucket_idx)
+            yield (tensor_batch, bucket_idx, bucket)
 
 
 def build_dynamic_dataset_iter(
@@ -425,6 +435,7 @@ def build_dynamic_dataset_iter(
     align=None,
     device_id=-1,
     model_type=None,
+    yield_bucket=False,
 ):
     """
     Build `DynamicDatasetIter` from opt.
@@ -463,6 +474,7 @@ def build_dynamic_dataset_iter(
             offset=offset,
             device=device,
             model_type=model_type,
+            yield_bucket=yield_bucket,
         )
         data_iter.num_workers = num_workers
         data_iter._init_datasets(0)  # when workers=0 init_fn not called

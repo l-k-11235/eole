@@ -43,7 +43,7 @@ def load_checkpoint(model_path):
         raise FileNotFoundError(f"{model_path} does not seem to exist.")
     elif os.path.isdir(model_path):
         os.environ["MODEL_PATH"] = model_path
-        logger.info("Loading checkpoint from %s" % model_path)
+        # logger.info("Loading checkpoint from %s" % model_path)
         # checkpoint = torch.load(ckpt_path, map_location=torch.device("cpu"))
         checkpoint = {}
         config_path = os.path.join(model_path, "config.json")

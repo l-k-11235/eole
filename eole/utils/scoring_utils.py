@@ -102,12 +102,13 @@ class ScoringPreparator:
             task=CorpusTask.INFER,
             tgt="",  # This force to clear the target side (needed when using tgt_file_prefix)
             device_id=gpu_rank,
+            yield_bucket=True,
         )
 
         # ########### #
         # Predictions #
         # ########### #
-        _, _, preds = translator._predict(
+        _, _, preds, bucket = translator._predict(
             infer_iter,
             transform=infer_iter.transforms,
             attn_debug=predict_config.attn_debug,
@@ -117,9 +118,16 @@ class ScoringPreparator:
         # ####### #
         # Outputs #
         # ####### #
-
         # Flatten predictions
         preds = [x.lstrip() for sublist in preds for x in sublist]
+
+        # Retrieve transformed sources
+        print(len(bucket))
+        # bucket = sorted(bucket, key=lambda x: x[1])
+        transformed_srcs = [item[0]["src"]["src"] for item in bucket]
+        print(len(bucket), len(preds), len(raw_refs))
+        # 1003
+        # 1003 3002 3003
         # Save results
         if (
             len(preds) > 0
@@ -128,8 +136,9 @@ class ScoringPreparator:
         ):
             path = os.path.join(self.config.dump_preds, f"preds.valid_step_{step}.txt")
             with open(path, "a") as file:
-                for i in range(len(raw_srcs)):
+                for i in range(len(transformed_srcs)):
                     file.write("SOURCE: {}\n".format(raw_srcs[i]))
+                    file.write("TRANSFORMED SOURCE: {}\n".format(transformed_srcs[i]))
                     file.write("REF: {}\n".format(raw_refs[i]))
                     file.write("PRED: {}\n\n".format(preds[i]))
         return preds, raw_refs

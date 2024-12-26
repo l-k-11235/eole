@@ -1,9 +1,10 @@
 import torch
 from torch.nn.functional import log_softmax
 from torch.nn.utils.rnn import pad_sequence
-from itertools import count, zip_longest
+from itertools import zip_longest  # count, zip_longest
 from copy import deepcopy
-from time import time
+
+# from time import time
 from math import exp
 import codecs
 
@@ -297,7 +298,7 @@ class Inference(object):
         )
 
         # Statistics
-        counter = count(1)
+        # counter = count(1)
         pred_score_total, estim_total, pred_words_total = 0, 0, 0
         gold_score_total, gold_words_total = 0, 0
 
@@ -305,7 +306,7 @@ class Inference(object):
         all_estim = []
         all_predictions = []
 
-        start_time = time()
+        # start_time = time()
 
         def _maybe_retranslate(translations, batch):
             """Here we handle the cases of mismatch in number of segments
@@ -404,27 +405,27 @@ class Inference(object):
 
                 bucket_preds += [n_best_preds]
 
-                if self.with_score:
-                    n_best_scores = [
-                        score for score in trans.pred_scores[: self.n_best]
-                    ]
-                    n_best_estims = [estim for estim in trans.estim[: self.n_best]]
-                    out_all = [
-                        pred + "\t" + str(score) + "\t" + str(estim)
-                        for (pred, score, estim) in zip(
-                            n_best_preds, n_best_scores, n_best_estims
-                        )
-                    ]
-                    self.out_file.write("\n".join(out_all) + "\n")
-                else:
-                    self.out_file.write("\n".join(n_best_preds) + "\n")
-                self.out_file.flush()
+                # if self.with_score:
+                #     n_best_scores = [
+                #         score for score in trans.pred_scores[: self.n_best]
+                #     ]
+                #     n_best_estims = [estim for estim in trans.estim[: self.n_best]]
+                #     out_all = [
+                #         pred + "\t" + str(score) + "\t" + str(estim)
+                #         for (pred, score, estim) in zip(
+                #             n_best_preds, n_best_scores, n_best_estims
+                #         )
+                #     ]
+                #     self.out_file.write("\n".join(out_all) + "\n")
+                # else:
+                #     self.out_file.write("\n".join(n_best_preds) + "\n")
+                # self.out_file.flush()
 
-                if self.verbose:
-                    srcs = [voc_src[tok] for tok in trans.src[: trans.srclen]]
-                    sent_number = next(counter)
-                    output = trans.log(sent_number, src_raw=srcs)
-                    self._log(output)
+                # if self.verbose:
+                #     srcs = [voc_src[tok] for tok in trans.src[: trans.srclen]]
+                #     sent_number = next(counter)
+                #     output = trans.log(sent_number, src_raw=srcs)
+                #     self._log(output)
 
                 if attn_debug:
                     preds = trans.pred_sents[0]
@@ -468,7 +469,17 @@ class Inference(object):
         bucket_predictions = []
         prev_idx = 0
 
-        for batch, bucket_idx in infer_iter:
+        buckets = []
+        buckets_idx = []
+
+        for batch, bucket_idx, _bucket in infer_iter:
+
+            if _bucket is not None:
+                if bucket_idx not in buckets_idx:
+                    _bucket = sorted(_bucket, key=lambda x: x[1])
+                    buckets.extend(_bucket)
+                    buckets_idx.append(bucket_idx)
+                    print(bucket_idx, len(_bucket))
 
             batch_data = self.predict_batch(batch, attn_debug)
 
@@ -535,26 +546,26 @@ class Inference(object):
             gold_score_total += bucket_gold_score
             gold_words_total += bucket_gold_words
 
-        end_time = time()
+        # end_time = time()
 
-        if self.report_score:
-            msg = self._report_score("PRED", pred_score_total, len(all_scores))
-            self._log(msg)
-            msg = self._report_score("ESTIM", estim_total, len(all_estim))
-            self._log(msg)
-            if "tgt" in batch.keys() and not self.tgt_file_prefix:
-                msg = self._report_score("GOLD", gold_score_total, len(all_scores))
-                self._log(msg)
+        # if self.report_score:
+        #     msg = self._report_score("PRED", pred_score_total, len(all_scores))
+        #     self._log(msg)
+        #     msg = self._report_score("ESTIM", estim_total, len(all_estim))
+        #     self._log(msg)
+        #     if "tgt" in batch.keys() and not self.tgt_file_prefix:
+        #         msg = self._report_score("GOLD", gold_score_total, len(all_scores))
+        #         self._log(msg)
 
-        if self.report_time:
-            total_time = end_time - start_time
-            self._log("Total prediction time (s): %.1f" % total_time)
-            self._log(
-                "Average prediction time (ms): %.1f"
-                % (total_time / len(all_predictions) * 1000)
-            )
-            self._log("Tokens per second: %.1f" % (pred_words_total / total_time))
-            self._log("pred_words_total: %.1f" % (pred_words_total))
+        # if self.report_time:
+        #     total_time = end_time - start_time
+        #     self._log("Total prediction time (s): %.1f" % total_time)
+        #     self._log(
+        #         "Average prediction time (ms): %.1f"
+        #         % (total_time / len(all_predictions) * 1000)
+        #     )
+        #     self._log("Tokens per second: %.1f" % (pred_words_total / total_time))
+        #     self._log("pred_words_total: %.1f" % (pred_words_total))
 
         if self.dump_beam:
             import json
@@ -564,7 +575,7 @@ class Inference(object):
                 codecs.open(self.dump_beam, "w", "utf-8"),
             )
 
-        return all_scores, all_estim, all_predictions
+        return all_scores, all_estim, all_predictions, buckets
 
     def _score(self, infer_iter):
         self.with_scores = True
