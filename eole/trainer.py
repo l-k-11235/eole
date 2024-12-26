@@ -258,7 +258,7 @@ class Trainer(object):
         batches = []
         normalization = 0
         self.accum_count = self._accum_count(self.optim.training_step)
-        for batch, bucket_idx in iterator:
+        for batch, bucket_idx, bucket in iterator:
             batches.append(batch)
             if self.norm_method == "tokens":
                 num_tokens = batch["tgt"][:, 1:].ne(self.train_loss.padding_idx).sum()
@@ -407,7 +407,7 @@ class Trainer(object):
         with torch.no_grad():
             stats = eole.utils.Statistics()
             start = time.time()
-            for batch, bucket_idx in valid_iter:
+            for batch, bucket_idx, bucket in valid_iter:
                 src = batch["src"]
                 src_len = batch["srclen"]
                 tgt = batch["tgt"]
@@ -522,9 +522,9 @@ class Trainer(object):
                         )
                         bptt = True
 
-                        # print("# batch_tgt", batch['tgt'].tolist())
+                        # print("# batch_tgt", batch['tgt'].tolist()[0])
                         # print()
-                        # print("# batch_src", batch['src'].tolist())
+                        # print("# batch_src", batch['src'].tolist()[0])
                         # import sys
                         # sys.exit()
 

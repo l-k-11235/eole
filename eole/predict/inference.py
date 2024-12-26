@@ -469,7 +469,17 @@ class Inference(object):
         bucket_predictions = []
         prev_idx = 0
 
-        for batch, bucket_idx in infer_iter:
+        buckets = []
+        buckets_idx = []
+
+        for batch, bucket_idx, _bucket in infer_iter:
+
+            if _bucket is not None:
+                if bucket_idx not in buckets_idx:
+                    _bucket = sorted(_bucket, key=lambda x: x[1])
+                    buckets.extend(_bucket)
+                    buckets_idx.append(bucket_idx)
+                    print(bucket_idx, len(_bucket))
 
             batch_data = self.predict_batch(batch, attn_debug)
 
@@ -565,7 +575,7 @@ class Inference(object):
                 codecs.open(self.dump_beam, "w", "utf-8"),
             )
 
-        return all_scores, all_estim, all_predictions
+        return all_scores, all_estim, all_predictions, buckets
 
     def _score(self, infer_iter):
         self.with_scores = True
